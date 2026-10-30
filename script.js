@@ -138,17 +138,207 @@ Object.assign(guides,{
 });
 
 
-let currentLang="ja", currentGuide=null, currentStep=0;
+
+let currentLang="ja", currentGuide=null, currentGuideId=null, currentStep=0, selectedAnswers=[];
 const $=s=>document.querySelector(s);
 function tr(key){return translations[currentLang][key]||translations.ja[key]||key}
-function localize(){document.documentElement.lang=currentLang;document.querySelectorAll("[data-i18n]").forEach(el=>{const key=el.dataset.i18n; if(translations[currentLang][key])el.innerHTML=translations[currentLang][key]});}
-function openGuide(id){const guide=guides[id];if(!guide)return;currentGuide=guide;currentStep=0;$("#guideTitle").textContent=guide.title[currentLang]||guide.title.ja;$("#guideIntro").textContent=guide.intro[currentLang]||guide.intro.ja;$("#guidePanel").hidden=false;$("#questionCard").hidden=false;$("#resultCard").hidden=true;renderQuestion();$("#guidePanel").scrollIntoView({behavior:"smooth",block:"start"});}
-function renderQuestion(){const q=currentGuide.questions[currentStep];$("#stepLabel").textContent=`${tr("step")} ${currentStep+1} / ${currentGuide.questions.length}`;$("#questionTitle").textContent=q.q[currentLang]||q.q.ja;const box=$("#answerOptions");box.innerHTML="";q.a.forEach(answer=>{const b=document.createElement("button");b.className="answer-option";b.textContent=answer.t[currentLang]||answer.t.ja;b.addEventListener("click",()=>{if(currentStep<currentGuide.questions.length-1){currentStep++;renderQuestion()}else showResult()});box.appendChild(b)});}
-function showResult(){const r=currentGuide.result;$("#questionCard").hidden=true;const card=$("#resultCard");card.hidden=false;card.innerHTML=`<p class="step-label">${tr("result")}</p><h3>${currentGuide.title[currentLang]||currentGuide.title.ja}</h3><h4>${tr("first")}</h4><p>${r.first[currentLang]||r.first.ja}</p><h4>${tr("steps")}</h4><ul>${(r.steps[currentLang]||r.steps.ja).map(x=>`<li>${x}</li>`).join("")}</ul><h4>${tr("documents")}</h4><p>${r.docs[currentLang]||r.docs.ja}</p><h4>${tr("caution")}</h4><p>${r.caution[currentLang]||r.caution.ja}</p><p><a href="${currentGuide.result.source}" target="_blank" rel="noopener noreferrer">${(currentGuide.result.sourceLabel[currentLang]||currentGuide.result.sourceLabel.ja)} ↗</a></p><div class="result-actions"><button class="small-action" id="restartButton">${tr("restart")}</button><button class="small-action" id="backToCategories">${tr("back")}</button></div>`;$("#restartButton").onclick=()=>{currentStep=0;$("#resultCard").hidden=true;$("#questionCard").hidden=false;renderQuestion()};$("#backToCategories").onclick=closeGuide;}
-function closeGuide(){$("#guidePanel").hidden=true;$("#categories").scrollIntoView({behavior:"smooth"});currentGuide=null}
-document.querySelectorAll(".category-card").forEach(btn=>btn.addEventListener("click",()=>{const id=btn.dataset.category;const map={home:"rent",money:"unknowncharge",shopping:"refund",work:"resign",procedures:"moving",trouble:"leak"};if(map[id])openGuide(map[id]);else{alert(currentLang==="ja"?"このカテゴリーは準備中です。まずは公開済みのガイドをご利用ください。":"This guide is coming soon. Please try an available guide.")}}));
+function localize(){
+  document.documentElement.lang=currentLang;
+  document.querySelectorAll("[data-i18n]").forEach(el=>{
+    const key=el.dataset.i18n;
+    if(translations[currentLang][key]) el.innerHTML=translations[currentLang][key];
+  });
+}
+
+/* Situation-specific advice: both answers affect the result.
+   Existing common guidance remains below as a baseline. */
+const branchAdvice = {
+ rent: {
+  q1: [
+   ["請求書の各項目について、作業内容・単価・数量・借主負担とする理由を項目ごとに書面で確認してください。","Ask for a written, itemized explanation of the work, unit cost, quantity and reason each item is charged to you.","请逐项书面确认施工内容、单价、数量以及要求租客承担费用的理由。","Yêu cầu giải thích bằng văn bản từng hạng mục, nội dung sửa chữa, đơn giá, số lượng và lý do người thuê phải trả.","각 항목의 작업 내용·단가·수량·임차인 부담 사유를 서면으로 확인하세요."],
+   ["敷金の預かり額、差し引かれた項目、残額の計算を確認してください。敷金精算書を求めましょう。","Check the deposit amount, each deduction and the calculation of the balance. Request a deposit statement.","确认押金金额、每项扣款及余额计算，并索取押金结算单。","Kiểm tra tiền đặt cọc, từng khoản khấu trừ và số dư; yêu cầu bảng quyết toán tiền cọc.","보증금 액수·공제 항목·잔액 계산을 확인하고 정산서를 요청하세요."],
+   ["退去前に室内全体を撮影し、傷や汚れの位置を記録してください。立会い時は説明内容を書面に残しましょう。","Before moving out, photograph the entire home and record existing marks. Keep written notes of the inspection.","退房前拍摄房屋整体并记录瑕疵位置；验房时将说明留作书面记录。","Trước khi trả nhà, chụp ảnh toàn bộ căn hộ và ghi vị trí hư hỏng; lưu lại nội dung kiểm tra bằng văn bản.","퇴거 전에 집 전체와 흠집 위치를 촬영하고, 입회 점검 설명을 기록으로 남기세요."]
+  ],
+  q2: [
+   ["明細と契約書を照らし合わせ、入居時の写真・チェックシートも確認してください。","Compare the invoice with the lease and your move-in photos or checklist.","将明细与合同对照，并查看入住时的照片或检查表。","Đối chiếu hóa đơn với hợp đồng, ảnh hoặc biên bản lúc nhận nhà.","청구서와 계약서를 대조하고 입주 당시 사진·확인서를 살펴보세요."],
+   ["書面で明細・契約書の写しを求め、受け取るまでは不明な項目への同意を保留して、記録を残してください。","Request the itemized statement and a copy of the lease in writing. Keep a record and do not agree to unclear items before reviewing them.","书面索取费用明细和合同副本；在确认不明项目之前，暂缓同意并保留记录。","Yêu cầu bảng kê và bản sao hợp đồng bằng văn bản; chưa đồng ý với khoản chưa rõ và hãy lưu lại trao đổi.","명세서와 계약서 사본을 서면으로 요청하고, 불명확한 항목은 확인 전 동의하지 말고 기록을 남기세요."]
+  ]
+ },
+ rentincrease:{
+  q1:[
+   ["通知書の受取日、値上げ開始日、値上げ額、理由を保存してください。すぐに承諾する必要があるかは契約・事情によります。","Keep the notice and note when you received it, the proposed start date, amount and reason. Whether you must accept depends on the lease and circumstances.","保存通知，记录收到日期、涨价开始日、金额和理由。是否必须接受取决于合同和具体情况。","Lưu thông báo và ghi ngày nhận, ngày áp dụng, số tiền tăng và lý do. Việc có phải chấp nhận hay không tùy hợp đồng và hoàn cảnh.","통지서를 보관하고 수령일·인상 시작일·인상액·사유를 기록하세요. 수락 여부는 계약과 사정에 따라 달라집니다."],
+   ["口頭でのやり取りだけにせず、値上げ額・開始時期・理由をメール等で送ってもらいましょう。","Ask for the proposed amount, start date and reasons in writing rather than relying on a verbal discussion.","不要只依赖口头说明，请对方通过邮件等书面告知涨价金额、开始时间和理由。","Đừng chỉ trao đổi bằng lời; hãy yêu cầu gửi bằng văn bản số tiền, thời điểm và lý do tăng.","구두 설명만으로 끝내지 말고 인상액·시작 시점·사유를 이메일 등으로 받으세요."],
+   ["更新契約書に署名する前に、現行賃料と新賃料、更新条件の違いを確認し、書面を保管してください。","Before signing a renewal, compare the current and proposed rent and all changed terms. Keep a copy.","续签前比较现行与新租金及其他条款变化，并保存文件。","Trước khi ký gia hạn, so sánh tiền thuê hiện tại, mức mới và các điều kiện thay đổi; giữ bản sao.","갱신 계약서에 서명하기 전에 현재·변경 임대료와 조건을 비교하고 사본을 보관하세요."]
+  ],
+  q2:[
+   ["書面の理由・計算根拠を確認し、納得できない点を整理して書面で質問してください。","Review the written reasons and calculation. Send written questions about anything unclear.","确认书面理由和计算依据，并将不清楚之处整理后书面询问。","Kiểm tra lý do và cách tính bằng văn bản; gửi câu hỏi về điểm chưa rõ.","서면 사유와 산정 근거를 확인하고 이해되지 않는 부분을 문서로 질문하세요."],
+   ["値上げの根拠と希望条件を文面で求め、やり取りを保存してください。賃料の支払いを自己判断で止めないでください。","Request the basis and proposed terms in writing and keep records. Do not stop paying rent on your own.","书面要求涨价依据和条件并保存沟通记录。不要自行停止支付租金。","Yêu cầu căn cứ và điều kiện tăng bằng văn bản, lưu trao đổi. Không tự ý ngừng trả tiền thuê.","인상 근거와 조건을 서면으로 요청하고 기록을 보관하세요. 임대료를 임의로 미납하지 마세요."]
+  ]
+ },
+ noise:{
+  q1:[
+   ["発生日時・長さ・音の種類・頻度を記録し、可能な範囲で録音してください。深夜早朝の継続性も記録します。","Log dates, duration, type and frequency; record audio where lawful and safe. Note whether it repeatedly occurs at night or early morning.","记录发生日期、持续时间、声音类型和频率；在适当范围内录音，并记录是否反复发生于深夜或清晨。","Ghi ngày giờ, thời lượng, loại tiếng ồn và tần suất; ghi âm khi phù hợp và an toàn.","발생 일시·지속 시간·소리 종류·빈도를 기록하고 가능한 범위에서 녹음하세요. 심야·새벽 반복 여부도 남기세요."],
+   ["何時にどのような音がしたか、生活への影響を記録してください。管理会社には感情的な表現を避け、事実を伝えます。","Record when the noise occurs, what it sounds like and how it affects you. Report facts calmly to management.","记录噪音时间、类型及对生活的影响。向管理公司陈述事实，避免情绪化表达。","Ghi thời điểm, loại tiếng ồn và ảnh hưởng đến sinh hoạt. Báo sự việc khách quan với công ty quản lý.","소음 시간·종류·생활 영향을 기록하고 관리회사에는 감정적 표현보다 사실을 전달하세요."],
+   ["身の危険や暴力の恐れがある場合は、相手に直接注意せず安全な場所へ移動してください。緊急時は110、けが・火災等は119です。","If you fear violence or immediate danger, do not confront the person. Move to safety; call 110 for police or 119 for fire/medical emergencies in Japan.","如有暴力或人身危险，不要直接对质，先到安全地点。日本紧急报警110，火灾或急救119。","Nếu có nguy hiểm hoặc bạo lực, đừng đối đầu trực tiếp; hãy đến nơi an toàn. Ở Nhật gọi 110 cho cảnh sát, 119 cho cấp cứu/cứu hỏa.","폭력이나 신변 위험이 있으면 직접 대면하지 말고 안전한 곳으로 이동하세요. 일본 경찰 110, 구급·화재 119."]
+  ],
+  q2:[
+   ["記録を日付順にまとめ、管理会社へ書面で相談してください。","Organize your evidence chronologically and contact the property manager in writing.","按日期整理记录，并书面联系管理公司。","Sắp xếp bằng chứng theo ngày và liên hệ công ty quản lý bằng văn bản.","기록을 날짜순으로 정리해 관리회사에 서면으로 상담하세요."],
+   ["今日から記録を始め、日時・場所・音の内容・継続時間を具体的に残してください。","Start a log today with the date, time, location, type of sound and duration.","从今天开始记录日期、时间、地点、声音内容和持续时间。","Bắt đầu ghi từ hôm nay: ngày giờ, địa điểm, loại tiếng ồn và thời lượng.","오늘부터 날짜·시간·장소·소리 내용·지속 시간을 구체적으로 기록하세요."]
+  ]
+ },
+ refund:{
+  q1:[
+   ["日本の販売事業者の返品特約、返品期限、返送料の負担を確認してください。通信販売は原則クーリング・オフ対象外です。","Check the Japanese seller's return policy, deadline and return-shipping rules. Mail-order purchases are generally not covered by cooling-off rights.","确认日本商家的退货条款、期限和运费承担方式。网络购物原则上不适用冷静期制度。","Kiểm tra chính sách, hạn trả và phí vận chuyển của người bán Nhật. Mua hàng từ xa nhìn chung không áp dụng cooling-off.","일본 판매자의 반품 조건·기한·반송비 부담을 확인하세요. 통신판매는 원칙적으로 쿨링오프 대상이 아닙니다."],
+   ["海外販売者の返品条件・返送先・関税や送料を確認してください。カード会社や購入サイトの補償制度も確認します。","Check the overseas seller's return terms, return address, shipping and customs costs. Review marketplace or card protections.","确认海外卖家的退货条件、地址、运费和关税，并查看平台或信用卡保障。","Kiểm tra điều kiện, địa chỉ trả hàng, phí vận chuyển và thuế; xem cơ chế bảo vệ của sàn hoặc thẻ.","해외 판매자의 반품 조건·반송 주소·배송비·관세를 확인하고 플랫폼·카드 보호제도도 살펴보세요."]
+  ],
+  q2:[
+   ["不具合部分と商品ページの説明を写真・動画で保存し、販売者へ注文番号とともに連絡してください。","Photograph or record the defect and the product listing. Contact the seller with your order number.","拍摄商品缺陷及商品页面说明，并附订单号联系卖家。","Chụp/quay lỗi và nội dung trang bán hàng; liên hệ người bán kèm mã đơn.","하자와 상품 설명 페이지를 사진·영상으로 남기고 주문번호와 함께 판매자에게 연락하세요."],
+   ["返品特約を確認し、期限内に未使用・未開封条件や返送料を確かめてから販売者へ連絡してください。","Check the return policy, deadline, unused/unopened conditions and shipping costs before contacting the seller.","确认退货条款、期限、未使用或未拆封条件及运费后联系卖家。","Kiểm tra điều kiện, thời hạn, tình trạng chưa sử dụng/chưa mở và phí trả hàng trước khi liên hệ.","반품 특약·기한·미사용/미개봉 조건·반송비를 확인한 뒤 판매자에게 연락하세요."]
+  ]
+ },
+ unknowncharge:{
+  q1:[
+   ["カード会社の公式アプリ・カード裏面の番号から利用先を確認してください。不正利用が疑われる場合はカード停止・再発行を相談します。","Check the merchant through your card issuer's official app or the number on the card. If fraud is suspected, ask about freezing and replacing the card.","通过发卡机构官方应用或卡背电话确认商户。如怀疑盗刷，咨询冻结和补发卡片。","Kiểm tra đơn vị qua ứng dụng chính thức hoặc số điện thoại trên thẻ. Nếu nghi gian lận, yêu cầu khóa và cấp lại thẻ.","카드사 공식 앱이나 카드 뒷면 번호로 가맹점을 확인하세요. 부정 사용이 의심되면 정지·재발급을 문의하세요."],
+   ["銀行・決済サービスの公式窓口へすぐ連絡し、取引の停止や調査を相談してください。ログイン情報も確認します。","Contact your bank or payment provider through its official channel promptly and ask about stopping or investigating the transaction. Review login security.","立即通过银行或支付服务官方渠道联系，咨询停止交易或调查，并检查登录安全。","Liên hệ ngân hàng/dịch vụ thanh toán qua kênh chính thức để yêu cầu ngăn chặn hoặc điều tra giao dịch; kiểm tra bảo mật đăng nhập.","은행·결제서비스 공식 창구에 즉시 연락해 거래 중지·조사를 문의하고 로그인 보안도 확인하세요."],
+   ["通知内のリンクや電話番号は使わず、公式サイト・公式アプリから請求元を確認してください。個人情報や認証コードを入力しないでください。","Do not use links or phone numbers in the message. Verify through the official site or app; never share personal details or verification codes.","不要点击通知中的链接或拨打其中号码，请通过官网或官方应用核实。不要输入个人信息或验证码。","Không dùng liên kết/số điện thoại trong tin nhắn. Hãy kiểm tra qua trang/ứng dụng chính thức; không cung cấp mã xác thực.","문자·메일의 링크나 전화번호를 이용하지 말고 공식 사이트·앱에서 확인하세요. 개인정보·인증번호를 입력하지 마세요."]
+  ],
+  q2:[
+   ["利用履歴・家族カード・定期購入・無料期間終了を確認しても不明なら、発行会社へ不正利用調査を依頼してください。","If the transaction remains unknown after checking family cards, subscriptions and trial periods, ask the issuer to investigate suspected unauthorized use.","检查家庭卡、订阅和试用期结束后仍不明时，请发卡机构调查疑似未授权交易。","Nếu vẫn không rõ sau khi kiểm tra thẻ phụ, đăng ký định kỳ và hết thời gian dùng thử, yêu cầu đơn vị phát hành điều tra.","가족카드·정기결제·무료체험 종료 여부를 확인해도 불명확하면 카드사에 부정 사용 조사를 요청하세요."],
+   ["まず利用履歴、家族の利用、定期購入、無料体験終了後の課金を確認し、画面を保存してください。","First check transaction history, family use, subscriptions and charges after free trials. Save screenshots.","先检查交易记录、家人使用、订阅及免费试用结束后的扣款，并保存页面。","Trước tiên kiểm tra lịch sử, người nhà sử dụng, đăng ký định kỳ và phí sau dùng thử; lưu ảnh màn hình.","먼저 이용 내역·가족 사용·정기구독·무료체험 종료 후 결제를 확인하고 화면을 저장하세요."]
+  ]
+ },
+ subscription:{
+  q1:[
+   ["解約完了メール・受付番号・完了画面を保存し、解約日と次回請求日を確認してください。","Save the cancellation confirmation, reference number or completion screen. Check the cancellation date and next billing date.","保存解约确认邮件、受理编号或完成页面，并确认解约日和下次扣款日。","Lưu email/mã xác nhận/màn hình hủy thành công; kiểm tra ngày hủy và ngày thanh toán tiếp theo.","해지 완료 메일·접수번호·완료 화면을 저장하고 해지일과 다음 청구일을 확인하세요."],
+   ["申請日時・方法・受付番号を確認し、事業者へ解約処理状況を問い合わせてください。","Check when and how you submitted the request and any reference number. Ask the provider to confirm its status.","确认申请时间、方式和受理编号，并向服务商询问解约处理状态。","Kiểm tra thời gian, cách gửi và mã tiếp nhận; hỏi nhà cung cấp tình trạng xử lý.","신청 일시·방법·접수번호를 확인하고 사업자에게 해지 처리 상태를 문의하세요."]
+  ],
+  q2:[
+   ["請求日・金額・請求名義を月ごとに並べ、解約日以降の請求について事業者と決済会社へ照会してください。","List each billing date, amount and merchant name. Ask the provider and payment company about charges after cancellation.","按月份整理扣款日期、金额和商户名称，并向服务商及支付机构查询解约后的扣款。","Liệt kê ngày, số tiền và tên đơn vị từng tháng; hỏi nhà cung cấp và đơn vị thanh toán về khoản sau khi hủy.","월별 청구일·금액·가맹점명을 정리하고 해지 후 청구에 대해 사업자와 결제사에 문의하세요."],
+   ["別サービス・追加契約・アプリ内課金・家族アカウントの請求でないか、請求名義と契約を照合してください。","Check whether the charge is from another service, add-on, in-app purchase or family account. Match the merchant name to your contracts.","确认是否为其他服务、附加合同、应用内购买或家庭账户费用，并核对商户名称和合同。","Kiểm tra có phải dịch vụ khác, tiện ích bổ sung, mua trong ứng dụng hoặc tài khoản gia đình; đối chiếu tên đơn vị với hợp đồng.","다른 서비스·추가 계약·앱 내 결제·가족 계정 청구인지 가맹점명과 계약을 대조하세요."]
+  ]
+ },
+ resign:{
+  q1:[
+   ["無期契約かどうか、就業規則の退職申出期限、有給休暇・未払い賃金を確認してください。","Check whether your contract is indefinite, the workplace notice rules, paid leave and any unpaid wages.","确认是否为无固定期限合同、公司辞职通知规定、带薪休假及未支付工资。","Kiểm tra hợp đồng không xác định thời hạn hay không, quy định báo nghỉ, phép năm và lương chưa trả.","기간의 정함이 없는 계약인지, 사직 통보기한·연차·미지급 임금을 확인하세요."],
+   ["契約期間・更新条件・途中退職の規定を確認してください。期間途中の退職は契約内容や事情で扱いが異なります。","Review the contract term, renewal terms and early-termination clauses. Leaving mid-term depends on the contract and circumstances.","确认合同期限、续约条件和中途离职条款。合同期内离职的处理取决于合同和具体情况。","Kiểm tra thời hạn, điều kiện gia hạn và điều khoản nghỉ giữa kỳ. Việc nghỉ trước hạn tùy hợp đồng và hoàn cảnh.","계약기간·갱신 조건·중도 퇴직 조항을 확인하세요. 계약기간 중 퇴직은 계약과 사정에 따라 달라집니다."]
+  ],
+  q2:[
+   ["希望退職日から逆算し、上司・人事へ書面で意思を伝え、引継ぎと貸与品返却を整理してください。","Work backward from your desired last day. Notify your manager or HR in writing and plan handover and return of company property.","从希望离职日倒推，书面告知上司或人事，并安排交接和归还公司物品。","Tính ngược từ ngày nghỉ mong muốn, thông báo bằng văn bản cho quản lý/nhân sự và sắp xếp bàn giao, trả tài sản.","희망 퇴직일을 기준으로 역산해 상사·인사팀에 서면 통보하고 인수인계·대여품 반납을 준비하세요."],
+   ["退職希望日・引継ぎ・生活費・健康保険や年金の切替時期を整理してから相談しましょう。","Before deciding, consider your desired date, handover, living costs and when health insurance and pension coverage will change.","先整理希望离职日、交接、生活费用以及健康保险和养老金切换时间，再进行沟通。","Hãy sắp xếp ngày nghỉ mong muốn, bàn giao, chi phí sinh hoạt và thời điểm chuyển bảo hiểm y tế/lương hưu trước khi trao đổi.","퇴직 희망일·인수인계·생활비·건강보험과 연금 전환 시기를 정리한 뒤 상담하세요."]
+  ]
+ },
+ unemployment:{
+  q1:[
+   ["離職票の発行状況を確認し、退職日・離職理由・雇用保険の加入期間が分かる書類を保管してください。","Check the status of your separation documents and keep records of your leaving date, reason and employment-insurance history.","确认离职证明办理情况，并保存离职日期、离职原因及雇用保险参保期间的资料。","Kiểm tra giấy tờ nghỉ việc và lưu ngày nghỉ, lý do nghỉ, thời gian tham gia bảo hiểm việc làm.","이직 관련 서류 발급 상태를 확인하고 퇴직일·이직 사유·고용보험 가입기간 자료를 보관하세요."],
+   ["退職前に会社へ離職票の発行予定を確認し、退職後の手続きと必要書類をハローワークへ確認してください。","Before leaving, ask your employer when it will issue the separation notice. Check required documents with Hello Work.","离职前向公司确认离职票预计发放时间，并向Hello Work确认离职后的手续和材料。","Trước khi nghỉ, hỏi công ty thời điểm cấp giấy nghỉ việc; xác nhận thủ tục và giấy tờ với Hello Work.","퇴직 전에 회사에 이직표 발급 예정일을 확인하고 헬로워크에 필요 서류를 문의하세요."]
+  ],
+  q2:[
+   ["住所地を管轄するハローワークで求職申込みと受給資格の確認を進めてください。離職理由の記載に誤りがあれば資料を持参して相談します。","Apply for job-seeker registration and eligibility review at the Hello Work office for your address. Bring evidence if the stated reason for leaving is incorrect.","到管辖住所的Hello Work办理求职登记和资格确认。如离职原因记载有误，带资料咨询。","Đến Hello Work phụ trách nơi cư trú để đăng ký tìm việc và xác nhận điều kiện. Nếu lý do nghỉ ghi sai, mang tài liệu để hỏi.","주소지 관할 헬로워크에서 구직 신청과 수급자격 확인을 진행하세요. 이직 사유가 틀렸다면 자료를 지참해 상담하세요."],
+   ["会社へ発行予定日を確認してください。届かない場合は、退職日が分かる資料を持ってハローワークへ相談してください。","Ask your employer when it will be issued. If it does not arrive, consult Hello Work with documents showing your leaving date.","向公司确认发放日期。如未收到，携带能证明离职日期的资料向Hello Work咨询。","Hỏi công ty ngày cấp. Nếu chưa nhận được, mang giấy tờ chứng minh ngày nghỉ đến Hello Work để hỏi.","회사에 발급 예정일을 확인하세요. 받지 못하면 퇴직일을 확인할 자료를 가지고 헬로워크에 상담하세요."]
+  ]
+ },
+ moving:{
+  q1:[
+   ["同じ自治体内の転居届が基本です。引っ越した日から14日以内を目安に市区町村窓口で手続きしてください。","Within the same municipality, file a change-of-address notice, generally within 14 days after moving.","同一自治体内搬家通常办理迁居申报，原则上在搬家后14天内到市区町村窗口办理。","Trong cùng địa phương, thường nộp thông báo chuyển địa chỉ trong vòng 14 ngày sau khi chuyển.","같은 지자체 안에서는 전거 신고가 기본이며, 이사 후 14일 이내를 기준으로 시구정촌에서 처리하세요."],
+   ["旧地址办理迁出、新地址办理迁入。迁入手续原则上在开始居住后14天内办理，并确认是否需要迁出证明。","File a move-out notice with the old municipality and a move-in notice with the new one, generally within 14 days of starting to live there.","旧地址办理迁出、新地址办理迁入。迁入原则上在开始居住后14天内办理，并确认是否需要迁出证明。","Nộp giấy chuyển đi ở nơi cũ và chuyển đến ở nơi mới, thường trong 14 ngày từ khi bắt đầu cư trú; kiểm tra có cần giấy chuyển đi không.","이전 지자체에서 전출, 새 지자체에서 전입 신고를 하세요. 전입은 거주 시작 후 14일 이내가 원칙이며 전출증명서 필요 여부를 확인하세요."],
+   ["海外からの転入は通常の国内転居と必要書類が異なります。在留カード・パスポート等を準備し、自治体に事前確認してください。","Moving from overseas has different document requirements. Prepare your residence card and passport and confirm with the municipality in advance.","从海外迁入所需材料与国内搬家不同。准备在留卡、护照等，并提前向自治体确认。","Chuyển đến từ nước ngoài cần giấy tờ khác với chuyển nhà trong nước. Chuẩn bị thẻ cư trú, hộ chiếu và hỏi chính quyền địa phương trước.","해외에서 전입하는 경우 국내 이사와 서류가 다릅니다. 재류카드·여권 등을 준비해 지자체에 미리 확인하세요."]
+  ],
+  q2:[
+   ["マイナンバーカードを持参し、継続利用・住所変更の手続きを確認してください。暗証番号が必要になる場合があります。","Bring your My Number card and ask about continued use and address updates. You may need your PIN.","携带个人编号卡，确认继续使用和地址变更手续；可能需要密码。","Mang thẻ My Number và hỏi thủ tục tiếp tục sử dụng, đổi địa chỉ; có thể cần mã PIN.","마이넘버카드를 지참해 계속 이용·주소 변경 절차를 확인하세요. 비밀번호가 필요할 수 있습니다."],
+   ["本人確認書類など必要書類を自治体に確認し、窓口へ持参してください。","Ask the municipality which identity documents are required and bring them to the counter.","向自治体确认所需身份证明材料并带到窗口。","Hỏi chính quyền địa phương giấy tờ tùy thân cần thiết và mang đến quầy.","필요한 신분증 등 서류를 지자체에 확인해 창구에 가져가세요."]
+  ]
+ },
+ leak:{
+  q1:[
+   ["安全なら止水栓・元栓を閉め、漏水箇所と濡れた物を撮影してください。","If safe, close the shutoff valve and photograph the leak and affected belongings.","如安全可行，关闭止水阀或总阀，并拍摄漏水处和受损物品。","Nếu an toàn, khóa van nước và chụp ảnh chỗ rò rỉ cùng đồ bị ướt.","안전하다면 밸브를 잠그고 누수 부위와 젖은 물건을 촬영하세요."],
+   ["天井・壁内部の漏水は電気設備や天井材の危険があり得ます。濡れた照明・コンセントに触れず、管理会社へ緊急連絡してください。","Leaks from ceilings or walls may involve electrical or structural hazards. Do not touch wet lights or outlets; contact management urgently.","天花板或墙内漏水可能涉及电气或结构危险。不要触碰潮湿的灯具和插座，立即联系管理公司。","Rò từ trần/tường có thể gây nguy hiểm điện hoặc kết cấu. Không chạm đèn/ổ cắm ướt; liên hệ khẩn cấp công ty quản lý.","천장·벽 누수는 전기·구조 위험이 있을 수 있습니다. 젖은 조명·콘센트를 만지지 말고 관리회사에 긴급 연락하세요."],
+   ["下の階への被害拡大を防ぐため、すぐ管理会社へ連絡し、下階への影響が疑われることを伝えてください。","Contact management immediately to limit damage and tell them water may be reaching the unit below.","为防止损害扩大，立即联系管理公司，并告知可能影响楼下住户。","Liên hệ công ty quản lý ngay để hạn chế thiệt hại và báo khả năng nước rò xuống tầng dưới.","아래층 피해 확산을 막기 위해 즉시 관리회사에 연락하고 하층 누수 가능성을 알리세요."]
+  ],
+  q2:[
+   ["安全に操作できる場合だけ止水し、管理会社の指示を待ってください。","Shut off the water only if safe, then follow the property manager's instructions.","仅在安全时止水，然后听从管理公司指示。","Chỉ khóa nước nếu an toàn, sau đó làm theo hướng dẫn của công ty quản lý.","안전할 때만 물을 잠그고 관리회사 안내를 따르세요."],
+   ["無理に操作せず、漏水箇所から離れて管理会社の緊急窓口へ連絡してください。","Do not force any controls. Keep away from the leak and contact the manager's emergency line.","不要勉强操作，远离漏水处并联系管理公司的紧急窗口。","Đừng cố thao tác; tránh xa chỗ rò rỉ và gọi số khẩn cấp của công ty quản lý.","무리하게 조작하지 말고 누수 부위에서 떨어져 관리회사 긴급 연락처로 연락하세요."]
+  ]
+ }
+};
+
+const localizedTopicTitles = {
+ rent:{ja:"退去費用が高すぎると感じる",en:"My move-out bill seems too high",zh:"我觉得退房费用过高",vi:"Tôi thấy phí trả nhà quá cao",ko:"퇴거 비용이 너무 많이 나온 것 같아요"}
+};
+Object.assign(guides.rent.title, localizedTopicTitles.rent);
+
+function getAdviceSet(group, idx){
+  const entry = branchAdvice[currentGuideId]?.[group]?.[idx];
+  if(!entry) return null;
+  return entry[["ja","en","zh","vi","ko"].indexOf(currentLang)] || entry[0];
+}
+function openGuide(id){
+  const guide=guides[id]; if(!guide) return;
+  currentGuide=guide; currentGuideId=id; currentStep=0; selectedAnswers=[];
+  $("#guideTitle").textContent=guide.title[currentLang]||guide.title.ja;
+  $("#guideIntro").textContent=guide.intro[currentLang]||guide.intro.ja;
+  $("#guidePanel").hidden=false; $("#questionCard").hidden=false; $("#resultCard").hidden=true;
+  renderQuestion();
+  $("#guidePanel").scrollIntoView({behavior:"smooth",block:"start"});
+}
+function renderQuestion(){
+  const q=currentGuide.questions[currentStep];
+  $("#stepLabel").textContent=`${tr("step")} ${currentStep+1} / ${currentGuide.questions.length}`;
+  $("#questionTitle").textContent=q.q[currentLang]||q.q.ja;
+  const box=$("#answerOptions"); box.innerHTML="";
+  q.a.forEach((answer,index)=>{
+    const b=document.createElement("button"); b.className="answer-option";
+    b.textContent=answer.t[currentLang]||answer.t.ja;
+    b.addEventListener("click",()=>{
+      selectedAnswers[currentStep]=index;
+      if(currentStep<currentGuide.questions.length-1){currentStep++;renderQuestion();}
+      else showResult();
+    });
+    box.appendChild(b);
+  });
+}
+function showResult(){
+  const r=currentGuide.result, card=$("#resultCard");
+  const lang=currentLang;
+  const advice1=getAdviceSet("q1",selectedAnswers[0]);
+  const advice2=getAdviceSet("q2",selectedAnswers[1]);
+  const selected=currentGuide.questions.map((q,i)=>`<li><b>${q.q[lang]||q.q.ja}</b><br>${q.a[selectedAnswers[i]].t[lang]||q.a[selectedAnswers[i]].t.ja}</li>`).join("");
+  const tailored=[advice1,advice2].filter(Boolean).map((t,i)=>`<li>${t}</li>`).join("");
+  $("#questionCard").hidden=true; card.hidden=false;
+  card.innerHTML=`
+    <p class="step-label">${tr("result")}</p>
+    <h3>${currentGuide.title[lang]||currentGuide.title.ja}</h3>
+    <h4>${lang==="ja"?"あなたの回答":"Your answers"}</h4>
+    <ul>${selected}</ul>
+    <h4>${lang==="ja"?"この状況で優先すること":"Priority actions for your situation"}</h4>
+    <ul>${tailored}</ul>
+    <h4>${tr("first")}</h4><p>${r.first[lang]||r.first.ja}</p>
+    <h4>${tr("steps")}</h4><ul>${(r.steps[lang]||r.steps.ja).map(x=>`<li>${x}</li>`).join("")}</ul>
+    <h4>${tr("documents")}</h4><p>${r.docs[lang]||r.docs.ja}</p>
+    <h4>${tr("caution")}</h4><p>${r.caution[lang]||r.caution.ja}</p>
+    <p><a href="${r.source}" target="_blank" rel="noopener noreferrer">${(r.sourceLabel[lang]||r.sourceLabel.ja)} ↗</a></p>
+    <div class="result-actions"><button class="small-action" id="restartButton">${tr("restart")}</button><button class="small-action" id="backToCategories">${tr("back")}</button></div>`;
+  $("#restartButton").onclick=()=>{currentStep=0;selectedAnswers=[];card.hidden=true;$("#questionCard").hidden=false;renderQuestion();};
+  $("#backToCategories").onclick=closeGuide;
+}
+function closeGuide(){
+  $("#guidePanel").hidden=true; $("#categories").scrollIntoView({behavior:"smooth"});
+  currentGuide=null; currentGuideId=null; selectedAnswers=[];
+}
+document.querySelectorAll(".category-card").forEach(btn=>btn.addEventListener("click",()=>{
+  const id=btn.dataset.category;
+  const map={home:"rent",money:"unknowncharge",shopping:"refund",work:"resign",procedures:"moving",trouble:"leak"};
+  if(map[id]) openGuide(map[id]);
+  else alert(currentLang==="ja"?"このカテゴリーの診断は準備中です。『よくある困りごと』から利用できます。":"This category guide is coming soon. Please use the common concerns list.");
+}));
 document.querySelectorAll("[data-quick]").forEach(btn=>btn.addEventListener("click",()=>openGuide(btn.dataset.quick)));
-$("#languageSelect").addEventListener("change",e=>{currentLang=e.target.value;localize();if(currentGuide){$("#guideTitle").textContent=currentGuide.title[currentLang]||currentGuide.title.ja;$("#guideIntro").textContent=currentGuide.intro[currentLang]||currentGuide.intro.ja;if($("#resultCard").hidden)renderQuestion();else showResult()}});
+$("#languageSelect").addEventListener("change",e=>{
+  currentLang=e.target.value; localize();
+  if(currentGuide){
+    $("#guideTitle").textContent=currentGuide.title[currentLang]||currentGuide.title.ja;
+    $("#guideIntro").textContent=currentGuide.intro[currentLang]||currentGuide.intro.ja;
+    if($("#resultCard").hidden) renderQuestion(); else showResult();
+  }
+});
 $("#backButton").addEventListener("click",closeGuide);
-$("#homeLink").addEventListener("click",e=>{e.preventDefault();closeGuide();window.scrollTo({top:0,behavior:"smooth"})});
+$("#homeLink").addEventListener("click",e=>{e.preventDefault();closeGuide();window.scrollTo({top:0,behavior:"smooth"});});
 localize();
