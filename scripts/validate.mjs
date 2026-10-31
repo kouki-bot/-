@@ -4,13 +4,13 @@ import assert from "node:assert/strict";
 const html=fs.readFileSync("index.html","utf8");
 const js=fs.readFileSync("script.js","utf8");
 const css=fs.readFileSync("style.css","utf8");
-const ids=["rent","rentincrease","noise","refund","unknowncharge","subscription","resign","unemployment","moving","leak"];
+const ids=["rent","rentincrease","noise","refund","unknowncharge","subscription","resign","unemployment","moving","leak","gasleak","gasstove"];
 const languages=["ja","en","zh","vi","ko"];
-const categories={home:["rent","rentincrease","noise"],money:["unknowncharge","subscription"],shopping:["refund"],work:["resign","unemployment"],procedures:["moving"],trouble:["leak"]};
+const categories={home:["rent","rentincrease","noise"],money:["unknowncharge","subscription"],shopping:["refund"],work:["resign","unemployment"],procedures:["moving"],trouble:["leak","gasleak","gasstove"]};
 const syntax=spawnSync("node",["--check","script.js"],{encoding:"utf8"});
 assert.equal(syntax.status,0,syntax.stderr||"script.js syntax check failed");
 const quick=[...html.matchAll(/data-quick="([^"]+)"[^>]*data-topic-category="([^"]+)"/g)].map(([,id,category])=>({id,category}));
-assert.equal(quick.length,10,"Expected exactly 10 topic links");
+assert.equal(quick.length,12,"Expected exactly 12 topic links");
 assert.deepEqual(quick.map(x=>x.id).sort(),[...ids].sort(),"Topic IDs mismatch");
 for(const [category,expected] of Object.entries(categories)){
  const actual=quick.filter(x=>x.category===category).map(x=>x.id).sort();
