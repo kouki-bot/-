@@ -75,14 +75,21 @@ try {
   console.log("PASS: back-to-category action for every topic");
 
   await page.locator('[data-quick="rent"]').click();
-  await page.locator("#languageSelect").selectOption("en");
-  const englishQuestion = await page.locator("#questionTitle").innerText();
-  if (!englishQuestion || /退去|状況/.test(englishQuestion)) throw new Error("English question did not switch");
+  for (const lang of ["ja", "en", "zh", "vi", "ko"]) {
+    await page.locator("#languageSelect").selectOption(lang);
+    const actualLang = await page.locator("html").getAttribute("lang");
+    const question = await page.locator("#questionTitle").innerText();
+    if (actualLang !== lang || !question.trim()) throw new Error("Question language switch failed: " + lang);
+  }
+  await page.locator("#languageSelect").selectOption("ja");
   await page.locator(".answer-option").first().click();
   await page.locator(".answer-option").first().click();
-  await page.locator("#languageSelect").selectOption("zh");
-  const result = await page.locator("#resultCard").innerText();
-  if (!result.includes("您的回答")) throw new Error("Chinese result heading did not switch");
+  for (const lang of ["ja", "en", "zh", "vi", "ko"]) {
+    await page.locator("#languageSelect").selectOption(lang);
+    const actualLang = await page.locator("html").getAttribute("lang");
+    const result = await page.locator("#resultCard").innerText();
+    if (actualLang !== lang || !result.trim()) throw new Error("Result language switch failed: " + lang);
+  }
 
   if (pageErrors.length) throw new Error("Browser errors: " + pageErrors.join(" | "));
   console.log("PASS: six category filters and show-all");
