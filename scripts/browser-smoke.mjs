@@ -79,8 +79,12 @@ try {
   if (!emergency.includes("火を使わない") || !emergency.includes("電気スイッチ")) throw new Error("Gas emergency instructions not immediate");
   await page.locator("#backToCategories").click();
   await page.locator("#showAllTopics").click();
+  await page.locator('[data-quick="gasstove"]').waitFor({ state: "visible" });
   await page.locator('[data-quick="gasstove"]').click();
-  await page.locator(".answer-option").first().click();
+  await page.locator("#guidePanel").waitFor({ state: "visible" });
+  await page.locator("#questionCard").waitFor({ state: "visible" });
+  await page.locator("#answerOptions .answer-option").first().waitFor({ state: "visible" });
+  await page.locator("#answerOptions .answer-option").first().click();
   if (!(await page.locator("#resultCard").innerText()).includes("今すぐ安全を確保")) throw new Error("Gas stove safety gate failed");
   await page.locator("#backToCategories").click();
   await page.locator('[data-quick="rent"]').click();
