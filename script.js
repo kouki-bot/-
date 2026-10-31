@@ -40,7 +40,7 @@ Object.assign(guides,{
  tr5("賃貸借契約書、値上げ通知、これまでの支払記録、管理会社との連絡記録。","Lease, rent-increase notice, payment records and messages with the manager.","租赁合同、涨租通知、付款记录及与管理公司的沟通记录。","Hợp đồng thuê, thông báo tăng giá, lịch sử thanh toán và trao đổi với công ty quản lý.","임대차계약서, 인상 통지서, 납부 기록, 관리회사와의 연락 기록."),
  tr5("値上げの有効性は契約内容や事情によって異なります。家賃を一方的に止めたり、通知を無視したりせず、支払方法も含めて専門窓口に確認してください。","Whether an increase is valid depends on the contract and circumstances. Do not simply stop paying or ignore notices; get advice about payment arrangements.","涨租是否有效取决于合同和具体情况。不要擅自停止支付或忽视通知，请咨询专业窗口。","Hiệu lực của việc tăng tiền thuê tùy thuộc hợp đồng và hoàn cảnh. Không tự ý ngừng trả tiền hoặc bỏ qua thông báo; hãy hỏi cơ quan tư vấn.","인상 효력은 계약과 구체적 사정에 따라 달라집니다. 임의로 월세 납부를 중단하거나 통지를 무시하지 말고 상담받으세요."),
  "https://www.mlit.go.jp/jutakukentiku/house/content/001399558.pdf",
- tr5("国土交通省：家賃の値上げ幅に納得できない場合","MLIT: What to do if you disagree with a rent increase","日本国土交通省：对房租涨幅有异议时的处理方法","Bộ MLIT: Cách xử lý khi không đồng ý với mức tăng tiền thuê","일본 국토교통성: 임대료 인상 폭에 동의하기 어려울 때")),
+ tr5("国土交通省：民間賃貸住宅に関する相談対応事例集","MLIT: Consultation casebook on private rental housing","日本国土交通省：民间租赁住宅咨询案例集","Bộ MLIT: Tài liệu tình huống tư vấn về nhà cho thuê tư nhân","일본 국토교통성: 민간 임대주택 상담 사례집")),
  noise:makeGuide("home",
  tr5("近隣の騒音に困っている","I am troubled by neighborhood noise","受到邻居噪音困扰","Tôi bị làm phiền bởi tiếng ồn hàng xóm","이웃의 소음으로 불편을 겪고 있어요"),
  tr5("安全を優先し、騒音の記録を残して管理会社などに相談しましょう。","Prioritize safety, document the noise and contact the property manager or relevant office.","优先确保安全，记录噪音情况并联系管理公司等窗口。","Ưu tiên an toàn, ghi lại tiếng ồn và liên hệ công ty quản lý hoặc cơ quan phù hợp.","안전을 우선하고 소음 기록을 남겨 관리회사 등에 상담하세요."),
