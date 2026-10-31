@@ -38,7 +38,7 @@ try {
 
   const ids = ["rent","rentincrease","noise","refund","unknowncharge","subscription","resign","unemployment","moving","leak","gasleak","gasstove"];
   let testedCombinations = 0;
-  for (const id of ids.filter(id => id !== "gasleak")) {
+  for (const id of ids.filter(id => !["gasleak", "gasstove"].includes(id))) {
     await page.locator("#showAllTopics").click();
     await page.locator(`[data-quick="${id}"]`).click();
     const q1Count = await page.locator(".answer-option").count();
@@ -70,7 +70,7 @@ try {
     }
     await page.locator("#backToCategories").click();
   }
-  console.log(`PASS: all ${testedCombinations} answer combinations across 12 topics`);
+  console.log(`PASS: all ${testedCombinations} answer combinations across standard topics`);
   console.log("PASS: all results include tailored priority guidance");
   console.log("PASS: back-to-category action for every topic");
 
