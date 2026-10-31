@@ -28,7 +28,7 @@ assert.match(css,/\[hidden\]\s*\{[^}]*display\s*:\s*none/i,"Missing hidden CSS r
 assert.ok(html.includes('id="showAllTopics"'),"Missing show-all control");
 assert.ok(js.includes('$("#showAllTopics").addEventListener'),"Missing show-all handler");
 console.log("PASS: JavaScript syntax");
-console.log("PASS: 10 topic links and IDs");
-console.log("PASS: 6 category mappings");
+console.log("PASS: 12 topic links and IDs");
+console.log("PASS: 6 category mappings (12 topics)");
 console.log("PASS: 5 locale topic labels");
 console.log("PASS: hidden CSS and show-all control");
