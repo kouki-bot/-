@@ -91,6 +91,17 @@ try {
     if (actualLang !== lang || !result.trim()) throw new Error("Result language switch failed: " + lang);
   }
 
+  for (const width of [320, 360, 390, 430]) {
+    await page.setViewportSize({ width, height: 844 });
+    const dimensions = await page.evaluate(() => ({
+      viewport: document.documentElement.clientWidth,
+      document: document.documentElement.scrollWidth
+    }));
+    if (dimensions.document > dimensions.viewport) {
+      throw new Error("Horizontal overflow at " + width + "px: " + JSON.stringify(dimensions));
+    }
+  }
+
   if (pageErrors.length) throw new Error("Browser errors: " + pageErrors.join(" | "));
   console.log("PASS: six category filters and show-all");
   console.log("PASS: all 10 topics open, answer and render results");
