@@ -38,6 +38,7 @@ try {
 
   const ids = ["rent","rentincrease","noise","refund","unknowncharge","subscription","resign","unemployment","moving","leak"];
   for (const id of ids) {
+    await page.locator("#showAllTopics").click();
     await page.locator(`[data-quick="${id}"]`).click();
     if (await page.locator("#guidePanel").isHidden()) throw new Error(`${id}: guide did not open`);
     for (let step = 0; step < 2; step++) {
