@@ -43,21 +43,19 @@ try {
     await page.locator(`[data-quick="${id}"]`).click();
     const q1Count = await page.locator(".answer-option").count();
     for (let q1 = 0; q1 < q1Count; q1++) {
-      for (let q2 = 0; q2 < 10; q2++) {
+      if (q1 > 0) {
+        await page.locator("#backToCategories").click();
+        await page.locator("#showAllTopics").click();
+        await page.locator(`[data-quick="${id}"]`).click();
+      }
+      await page.locator(".answer-option").nth(q1).click();
+      const q2Count = await page.locator(".answer-option").count();
+      for (let q2 = 0; q2 < q2Count; q2++) {
         if (q2 > 0) {
-          const count = await page.locator(".answer-option").count();
-          if (q2 >= count) break;
-        }
-        if (q1 > 0 || q2 > 0) {
           await page.locator("#backToCategories").click();
           await page.locator("#showAllTopics").click();
           await page.locator(`[data-quick="${id}"]`).click();
-        }
-        await page.locator(".answer-option").nth(q1).click();
-        const q2Count = await page.locator(".answer-option").count();
-        if (q2 >= q2Count) {
-          await page.locator("#backToCategories").click();
-          break;
+          await page.locator(".answer-option").nth(q1).click();
         }
         await page.locator(".answer-option").nth(q2).click();
         const resultCard = page.locator("#resultCard");
@@ -68,15 +66,13 @@ try {
         const priorityList = await resultCard.locator("ul").nth(1).innerText();
         if (!priorityHeading || !priorityList.trim()) throw new Error(`${id}: tailored priority advice missing for answers ${q1},${q2}`);
         testedCombinations++;
-        if (q2 === q2Count - 1) {
-          await page.locator("#backToCategories").click();
-        }
       }
     }
+    await page.locator("#backToCategories").click();
   }
   console.log(`PASS: all ${testedCombinations} answer combinations across 10 topics`);
   console.log("PASS: all results include tailored priority guidance");
-  console.log("PASS: back-to-category action for each tested combination");
+  console.log("PASS: back-to-category action for every topic");
 
   await page.locator('[data-quick="rent"]').click();
   await page.locator("#languageSelect").selectOption("en");
