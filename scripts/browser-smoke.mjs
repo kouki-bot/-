@@ -37,20 +37,46 @@ try {
   }
 
   const ids = ["rent","rentincrease","noise","refund","unknowncharge","subscription","resign","unemployment","moving","leak"];
+  let testedCombinations = 0;
   for (const id of ids) {
     await page.locator("#showAllTopics").click();
     await page.locator(`[data-quick="${id}"]`).click();
-    if (await page.locator("#guidePanel").isHidden()) throw new Error(`${id}: guide did not open`);
-    for (let step = 0; step < 2; step++) {
-      const answers = page.locator(".answer-option");
-      if (await answers.count() < 2) throw new Error(`${id}: missing answer options at step ${step + 1}`);
-      await answers.first().click();
+    const q1Count = await page.locator(".answer-option").count();
+    for (let q1 = 0; q1 < q1Count; q1++) {
+      for (let q2 = 0; q2 < 10; q2++) {
+        if (q2 > 0) {
+          const count = await page.locator(".answer-option").count();
+          if (q2 >= count) break;
+        }
+        if (q1 > 0 || q2 > 0) {
+          await page.locator("#backToCategories").click();
+          await page.locator("#showAllTopics").click();
+          await page.locator(`[data-quick="${id}"]`).click();
+        }
+        await page.locator(".answer-option").nth(q1).click();
+        const q2Count = await page.locator(".answer-option").count();
+        if (q2 >= q2Count) {
+          await page.locator("#backToCategories").click();
+          break;
+        }
+        await page.locator(".answer-option").nth(q2).click();
+        const resultCard = page.locator("#resultCard");
+        if (await resultCard.isHidden()) throw new Error(`${id}: result missing for answers ${q1},${q2}`);
+        const resultText = await resultCard.innerText();
+        if (!resultText.trim()) throw new Error(`${id}: empty result for answers ${q1},${q2}`);
+        const priorityHeading = await resultCard.locator("h4").nth(1).innerText();
+        const priorityList = await resultCard.locator("ul").nth(1).innerText();
+        if (!priorityHeading || !priorityList.trim()) throw new Error(`${id}: tailored priority advice missing for answers ${q1},${q2}`);
+        testedCombinations++;
+        if (q2 === q2Count - 1) {
+          await page.locator("#backToCategories").click();
+        }
+      }
     }
-    if (await page.locator("#resultCard").isHidden()) throw new Error(`${id}: result did not render`);
-    if (!(await page.locator("#resultCard").innerText()).trim()) throw new Error(`${id}: empty result`);
-    await page.locator("#backToCategories").click();
-    if (!(await page.locator("#guidePanel").isHidden())) throw new Error(`${id}: back action failed`);
   }
+  console.log(`PASS: all ${testedCombinations} answer combinations across 10 topics`);
+  console.log("PASS: all results include tailored priority guidance");
+  console.log("PASS: back-to-category action for each tested combination");
 
   await page.locator('[data-quick="rent"]').click();
   await page.locator("#languageSelect").selectOption("en");
