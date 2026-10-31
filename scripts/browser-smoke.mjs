@@ -78,6 +78,7 @@ try {
   const emergency = await page.locator("#resultCard").innerText();
   if (!emergency.includes("火を使わない") || !emergency.includes("電気スイッチ")) throw new Error("Gas emergency instructions not immediate");
   await page.locator("#backToCategories").click();
+  await page.locator("#showAllTopics").click();
   await page.locator('[data-quick="gasstove"]').click();
   await page.locator(".answer-option").first().click();
   if (!(await page.locator("#resultCard").innerText()).includes("今すぐ安全を確保")) throw new Error("Gas stove safety gate failed");
