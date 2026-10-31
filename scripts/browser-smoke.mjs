@@ -24,7 +24,7 @@ try {
   await page.goto("http://127.0.0.1:4173/", { waitUntil: "networkidle" });
 
   const categories = {
-    home: 3, money: 2, shopping: 1, work: 2, procedures: 1, trouble: 1
+    home: 3, money: 2, shopping: 1, work: 2, procedures: 1, trouble: 3
   };
   for (const [category, count] of Object.entries(categories)) {
     await page.locator(`.category-card[data-category="${category}"]`).click();
@@ -32,13 +32,13 @@ try {
     if (visible !== count) throw new Error(`Category ${category}: expected ${count}, got ${visible}`);
   }
   await page.locator("#showAllTopics").click();
-  if (await page.locator(".popular-item:visible").count() !== 10) {
+  if (await page.locator(".popular-item:visible").count() !== 12) {
     throw new Error("Show-all did not restore all 10 topics");
   }
 
-  const ids = ["rent","rentincrease","noise","refund","unknowncharge","subscription","resign","unemployment","moving","leak"];
+  const ids = ["rent","rentincrease","noise","refund","unknowncharge","subscription","resign","unemployment","moving","leak","gasleak","gasstove"];
   let testedCombinations = 0;
-  for (const id of ids) {
+  for (const id of ids.filter(id => id !== "gasleak")) {
     await page.locator("#showAllTopics").click();
     await page.locator(`[data-quick="${id}"]`).click();
     const q1Count = await page.locator(".answer-option").count();
@@ -70,10 +70,18 @@ try {
     }
     await page.locator("#backToCategories").click();
   }
-  console.log(`PASS: all ${testedCombinations} answer combinations across 10 topics`);
+  console.log(`PASS: all ${testedCombinations} answer combinations across 12 topics`);
   console.log("PASS: all results include tailored priority guidance");
   console.log("PASS: back-to-category action for every topic");
 
+  await page.locator('[data-quick="gasleak"]').click();
+  const emergency = await page.locator("#resultCard").innerText();
+  if (!emergency.includes("火を使わない") || !emergency.includes("電気スイッチ")) throw new Error("Gas emergency instructions not immediate");
+  await page.locator("#backToCategories").click();
+  await page.locator('[data-quick="gasstove"]').click();
+  await page.locator(".answer-option").first().click();
+  if (!(await page.locator("#resultCard").innerText()).includes("今すぐ安全を確保")) throw new Error("Gas stove safety gate failed");
+  await page.locator("#backToCategories").click();
   await page.locator('[data-quick="rent"]').click();
   for (const lang of ["ja", "en", "zh", "vi", "ko"]) {
     await page.locator("#languageSelect").selectOption(lang);
@@ -104,7 +112,7 @@ try {
 
   if (pageErrors.length) throw new Error("Browser errors: " + pageErrors.join(" | "));
   console.log("PASS: six category filters and show-all");
-  console.log("PASS: all 10 topics open, answer and render results");
+  console.log("PASS: all 12 topics open, answer and render results");
   console.log("PASS: back-to-category action");
   console.log("PASS: language switch in question and result states");
   console.log("PASS: no uncaught browser errors");
